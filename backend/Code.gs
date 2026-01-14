@@ -12,9 +12,43 @@ function doPost(e) {
     return forwardTask(data);
   } else if (action === 'registerUser') {
     return registerUser(data);
+  } else if (action === 'getTasks') {
+    return getTasks();
   } else {
     return ContentService.createTextOutput(JSON.stringify({ error: "Invalid action" })).setMimeType(ContentService.MimeType.JSON);
   }
+}
+
+function getTasks() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName("Tasks");
+  
+  if (!sheet) {
+    return ContentService.createTextOutput(JSON.stringify([])).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  const data = sheet.getDataRange().getValues();
+  const tasks = [];
+
+  // Assuming columns: id(0), mainTask(1), subTask(2), assignedToName(3), status(4), remark(5), sentBy(6)
+  // Skipping header row
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    // Simple check to ensure row has data
+    if (row[0]) {
+      tasks.push({
+        id: String(row[0]),
+        mainTask: String(row[1]),
+        subTask: String(row[2]),
+        assignedToName: String(row[3]),
+        status: String(row[4]),
+        remark: String(row[5]),
+        sentBy: String(row[6])
+      });
+    }
+  }
+
+  return ContentService.createTextOutput(JSON.stringify(tasks)).setMimeType(ContentService.MimeType.JSON);
 }
 
 function registerUser(data) {

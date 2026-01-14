@@ -41,16 +41,34 @@ export async function getUsers(): Promise<User[]> {
   }
 }
 
+export async function getTasks(): Promise<Task[]> {
+  if (!GAS_API_URL) {
+    console.log("No GAS URL provided, returning empty list.");
+    return [];
+  }
+
+  try {
+    const response = await fetch(GAS_API_URL, {
+      method: "POST",
+      body: JSON.stringify({ action: "getTasks" }),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching tasks:", error);
+    return [];
+  }
+}
+
 export async function forwardTask(
   currentTaskId: string,
   remark: string,
   nextUserName: string,
   currentUserName: string
 ): Promise<{ success: boolean; newId?: string; error?: string }> {
-  
+
   if (!GAS_API_URL) {
-      console.log("Mocking forwardTask call:", { currentTaskId, remark, nextUserName, currentUserName });
-      return { success: true, newId: "mock-new-id-" + Date.now() };
+    console.log("Mocking forwardTask call:", { currentTaskId, remark, nextUserName, currentUserName });
+    return { success: true, newId: "mock-new-id-" + Date.now() };
   }
 
   try {

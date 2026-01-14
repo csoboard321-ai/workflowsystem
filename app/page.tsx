@@ -1,146 +1,157 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import TaskCard from "../components/TaskCard";
+import DashboardHeader from "../components/DashboardHeader";
+import TaskGroupCard from "../components/TaskGroupCard";
 import ForwardTaskModal from "../components/ForwardTaskModal";
-import { Task, forwardTask } from "../lib/api";
+import { Task, forwardTask, getTasks } from "../lib/api";
 import { useLiff } from "../components/LiffProvider";
 import { registerUser } from "../lib/register";
 
-// Mock initial data for demonstration purposes since we don't have a real GAS connection yet
-// In a real app, this would be fetched inside a useEffect or Server Component
-const INITIAL_TASKS: Task[] = [
-  {
-    id: "1",
-    mainTask: "Q1 Financial Report",
-    subTask: "Data Compilation",
-    assignedToName: "User A",
-    status: "Pending",
-  },
-  {
-    id: "2",
-    mainTask: "Website Redesign",
-    subTask: "Homepage Mockup",
-    assignedToName: "User A",
-    status: "Pending",
-  },
-  {
-    id: "3",
-    mainTask: "Client Meeting",
-    subTask: "Prepare Presentation",
-    assignedToName: "User B",
-    status: "Done",
-    remark: "Slides ready on drive",
-    sentBy: "User A",
-  },
-];
-
 export default function Home() {
-  // Hardcoding "User A" as the current user for this demo if not logged in via LIFF
-  const [tasks, setTasks] = useState<Task[]>(INITIAL_TASKS);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [taskToForward, setTaskToForward] = useState<Task | null>(null);
+  const [isFetching, setIsFetching] = useState(true);
+
+  // Expanded state
+  const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   const { isLoggedIn, profile, error: liffError } = useLiff();
   const [isRegistering, setIsRegistering] = useState(false);
 
+  // Fetch tasks
+  useEffect(() => {
+    getTasks().then((fetchedTasks) => {
+      setTasks(fetchedTasks);
+    }).finally(() => {
+      setIsFetching(false);
+    });
+  }, []);
+
+  // Register user
   useEffect(() => {
     if (isLoggedIn && profile) {
-      // Auto-register user
       setIsRegistering(true);
       registerUser(profile.userId, profile.displayName)
-        .then((res) => {
-          console.log("Registration result:", res);
-        })
+        .then((res) => console.log("Registration:", res))
         .finally(() => setIsRegistering(false));
     }
   }, [isLoggedIn, profile]);
 
   const currentUserName = profile ? profile.displayName : "User A (Guest)";
 
+  // Grouping Logic
+  const groupedTasks = tasks.reduce((acc, task) => {
+    if (!acc[task.mainTask]) {
+      acc[task.mainTask] = [];
+    }
+    acc[task.mainTask].push(task);
+    return acc;
+  }, {} as Record<string, Task[]>);
+
+  /* Safe grouping logic */
+  const processGroupTasks = (groupTasks: Task[]) => {
+    // 1. Group by SubTask Name
+    const subGroups = groupTasks.reduce((acc, t) => {
+      const key = t.subTask ? String(t.subTask) : "Unknown";
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(t);
+      return acc;
+    }, {} as Record<string, Task[]>);
+
+    // 2. Return the "Latest" task for each subtask
+    return Object.values(subGroups).map(subList => {
+      const pending = subList.find(t => t.status === 'Pending');
+      if (pending) return pending;
+      return subList[subList.length - 1];
+    });
+  };
+
+  /* History Map Logic */
+  const historyMap = tasks.reduce((acc, t) => {
+    const key = (t.subTask ? String(t.subTask) : "Unknown") + t.mainTask;
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(t);
+    return acc;
+  }, {} as Record<string, Task[]>);
+
+  const handleTaskClick = (task: Task) => {
+    // Toggle expansion
+    if (expandedTaskId === task.id) {
+      setExpandedTaskId(null);
+    } else {
+      setExpandedTaskId(task.id);
+    }
+  };
+
   const handleForwardClick = (task: Task) => {
-    setTaskToForward(task);
+    setSelectedTask(task);
     setIsModalOpen(true);
   };
 
   const handleConfirmForward = async (nextUserName: string, remark: string) => {
-    if (!taskToForward) return;
+    if (!selectedTask) return;
 
     setLoading(true);
-    const result = await forwardTask(taskToForward.id, remark, nextUserName, currentUserName);
+    const result = await forwardTask(selectedTask.id, remark, nextUserName, currentUserName);
     setLoading(false);
 
     if (result.success) {
-      // Optimistic API Update
-      setTasks((prevTasks) => {
-        // 1. Mark current task as Done and update remark
-        const updatedTasks = prevTasks.map((t) =>
-          t.id === taskToForward.id
-            ? { ...t, status: 'Done' as const, remark: remark }
-            : t
-        );
-
-        // 2. Add new forwarded task (simulated)
-        // In a real app we might reload data, but here we just append locally for immediate feedback
+      setTasks((prev) => {
+        const updated = prev.map(t => t.id === selectedTask.id ? { ...t, status: 'Done' as const, remark } : t);
         const newTask: Task = {
           id: result.newId || "temp-" + Date.now(),
-          mainTask: taskToForward.mainTask,
-          subTask: taskToForward.subTask,
+          mainTask: selectedTask.mainTask,
+          subTask: selectedTask.subTask,
           assignedToName: nextUserName,
           status: 'Pending',
-          sentBy: currentUserName,
+          sentBy: currentUserName
         };
-
-        return [...updatedTasks, newTask];
+        return [...updated, newTask];
       });
-
       setIsModalOpen(false);
-      setTaskToForward(null);
+      setSelectedTask(null);
     } else {
-      alert("Failed to forward task: " + result.error);
+      alert("Error: " + result.error);
     }
   };
 
+  // Calculate stats
+  const totalTasks = tasks.length; // Approximate
+  const completedTasks = tasks.filter(t => t.status === 'Done').length;
+
   return (
-    <div className="flex min-h-screen items-start justify-center bg-white dark:bg-black font-sans p-8">
-      <main className="w-full max-w-2xl">
-        <header className="mb-10 text-center sm:text-left">
-          <h1 className="text-4xl font-extralight tracking-tight text-zinc-900 dark:text-white mb-2">My Tasks</h1>
-          <p className="text-zinc-500 dark:text-zinc-400 font-light">Manage and forward your assignments.</p>
-          {isLoggedIn && profile && (
-            <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300 rounded-lg flex items-center gap-4">
-              {profile.pictureUrl && (
-                <img src={profile.pictureUrl} alt={profile.displayName} className="w-12 h-12 rounded-full" />
-              )}
-              <div>
-                <p className="font-semibold">Welcome, {profile.displayName}!</p>
-                {isRegistering && <p className="text-xs">Syncing profile...</p>}
-              </div>
-            </div>
-          )}
-          {liffError && (
-            <div className="mt-2 text-red-500 text-sm">LIFF Error: {liffError}</div>
-          )}
-        </header>
+    <div className="min-h-screen bg-slate-50 font-sans pb-20">
+      {/* Background decoration */}
+      <div className="fixed top-0 left-0 w-full h-64 bg-gradient-to-b from-purple-50 to-transparent -z-10"></div>
 
-        <section>
-          <h2 className="text-xl font-semibold mb-4 dark:text-zinc-200">Pending</h2>
-          {tasks.filter(t => t.status === 'Pending').length > 0 ? (
-            tasks.filter(t => t.status === 'Pending').map(task => (
-              <TaskCard key={task.id} task={task} onForward={handleForwardClick} />
-            ))
-          ) : (
-            <p className="text-zinc-500 italic">No pending tasks.</p>
-          )}
-        </section>
+      <div className="max-w-md mx-auto p-4">
+        <DashboardHeader
+          profile={profile ? profile : null}
+          totalTasks={tasks.length}
+          completedTasks={completedTasks}
+        />
 
-        <section className="mt-8">
-          <h2 className="text-xl font-semibold mb-4 dark:text-zinc-200">History / Done</h2>
-          {tasks.filter(t => t.status === 'Done').map(task => (
-            <TaskCard key={task.id} task={task} onForward={handleForwardClick} />
-          ))}
-        </section>
+        {isFetching ? (
+          <div className="text-center text-slate-400 py-10">Loading tasks...</div>
+        ) : (
+          Object.entries(groupedTasks).map(([mainTaskName, groupTasks]) => {
+            const latestSubTasks = processGroupTasks(groupTasks);
+            return (
+              <TaskGroupCard
+                key={mainTaskName}
+                mainTaskName={mainTaskName}
+                tasks={latestSubTasks}
+                expandedTaskId={expandedTaskId}
+                historyMap={historyMap}
+                onTaskClick={handleTaskClick}
+                onForwardClick={handleForwardClick}
+              />
+            );
+          })
+        )}
 
         <ForwardTaskModal
           isOpen={isModalOpen}
@@ -148,7 +159,7 @@ export default function Home() {
           onConfirm={handleConfirmForward}
           loading={loading}
         />
-      </main>
+      </div>
     </div>
   );
 }
