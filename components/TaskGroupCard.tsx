@@ -69,11 +69,11 @@ export default function TaskGroupCard({
         .join(", ");
 
     return (
-        <div className="bg-white rounded-[2rem] p-5 shadow-sm border border-slate-100 mb-6 h-fit relative overflow-hidden">
+        <div className="bg-white rounded-[2rem] p-2 sm:p-5 shadow-sm border border-slate-100 mb-6 h-fit relative overflow-hidden">
             {/* Decorative Top Line */}
             <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-200 to-amber-200 opacity-50"></div>
 
-            <div className="flex justify-between items-start mb-3 pt-2">
+            <div className="flex justify-between items-start mb-3 pt-2 px-2 sm:px-0">
                 <div>
                     <h3 className="text-lg font-bold text-slate-800">{title}</h3>
                 </div>
@@ -84,7 +84,7 @@ export default function TaskGroupCard({
                 </div>
             </div>
 
-            <div className="mb-5">
+            <div className="mb-5 px-2 sm:px-0">
                 {subtitle && (
                     <p className="text-sm text-red-600 font-bold mb-3">{subtitle}</p>
                 )}
@@ -99,10 +99,16 @@ export default function TaskGroupCard({
             {/* Task List */}
             <div className="space-y-2">
                 {/* Header - Only show on Desktop */}
-                {/* Header - Only show on Desktop */}
-                <div className="hidden sm:grid grid-cols-12 gap-4 px-4 mb-2 text-xs text-slate-400 font-semibold uppercase tracking-wider">
-                    <div className="col-span-2 pl-1">วาระ/เรื่อง</div>
-                    <div className="col-span-3 text-left pl-1">ผู้รับผิดชอบ</div>
+                {/* Header - Show on All Screens */}
+                <div className="grid grid-cols-12 gap-2 px-2 sm:px-4 mb-2 text-[10px] md:text-xs text-slate-400 font-semibold uppercase tracking-wider">
+                    <div className="col-span-2 pl-1">
+                        <span className="hidden md:inline">วาระ/เรื่อง</span>
+                        <span className="md:hidden">วาระ</span>
+                    </div>
+                    <div className="col-span-3 text-left pl-1">
+                        <span className="hidden md:inline">ผู้รับผิดชอบ</span>
+                        <span className="md:hidden">ผู้รับ</span>
+                    </div>
                     <div className="col-span-5 flex justify-center items-center">สถานะ</div>
                     <div className="col-span-2 flex justify-center items-center">ด่วน</div>
                 </div>

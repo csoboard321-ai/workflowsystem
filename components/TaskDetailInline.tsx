@@ -13,7 +13,7 @@ export default function TaskDetailInline({ currentTask, history, onForward }: Ta
     const canForward = !currentTask.status;
 
     return (
-        <div className="bg-gradient-to-b from-white to-slate-50/50 rounded-b-2xl p-4 mb-3 mx-2 -mt-4 border-x border-b border-indigo-50/50 shadow-inner relative z-0 animate-in slide-in-from-top-2 duration-200">
+        <div className="bg-gradient-to-b from-white to-slate-50/50 rounded-b-2xl p-2 sm:p-4 mb-3 mx-0 sm:mx-2 -mt-4 border-x border-b border-indigo-50/50 shadow-inner relative z-0 animate-in slide-in-from-top-2 duration-200">
 
             {/* Note Section */}
             <div className="mb-5 pt-2">
@@ -61,7 +61,7 @@ export default function TaskDetailInline({ currentTask, history, onForward }: Ta
             )}
 
             {/* Timeline Area */}
-            <div className="bg-white rounded-xl p-4 border border-slate-100 shadow-sm">
+            <div className="bg-white rounded-xl p-3 sm:p-4 border border-slate-100 shadow-sm">
                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Timeline</h4>
                 <div className="space-y-5 px-1">
                     {history.filter(h => h.status).length === 0 ? (
