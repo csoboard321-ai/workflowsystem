@@ -56,7 +56,9 @@ export default function Home() {
     ? allUsers.find(u => u.id === profile.userId)
     : null;
 
-  const currentUserName = currentUserInSheet ? currentUserInSheet.nickName : (profile ? profile.displayName : "User A (Guest)");
+  const currentUserName = currentUserInSheet
+    ? (currentUserInSheet.nickName || currentUserInSheet.name)
+    : (profile ? profile.displayName : "User A (Guest)");
 
   // --- Filtering & Helper ---
 
