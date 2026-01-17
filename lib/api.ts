@@ -37,7 +37,8 @@ export async function getUsers(): Promise<User[]> {
       { name: "User A", id: "user_a", nickName: "A", role: "Owner" },
       { name: "User B", id: "user_b", nickName: "B", role: "Inspector" },
       { name: "User C", id: "user_c", nickName: "C", role: "Owner" },
-      { name: "Manager", id: "manager", nickName: "Boss", role: "Owner" }
+      { name: "Manager", id: "manager", nickName: "Boss", role: "Owner" },
+      { name: "New User", id: "new_user", nickName: "New", role: "No Role" }
     ];
   }
 

@@ -45,7 +45,11 @@ export default function Home() {
     if (isLoggedIn && profile) {
       setIsRegistering(true);
       registerUser(profile.userId, profile.displayName)
-        .then((res) => console.log("Registration:", res))
+        .then((res) => {
+          console.log("Registration:", res);
+          // Refresh users to get the new role immediately
+          getUsers().then(setAllUsers);
+        })
         .finally(() => setIsRegistering(false));
     }
   }, [isLoggedIn, profile]);
@@ -158,8 +162,31 @@ export default function Home() {
   const totalTasks = tabTasks.length;
   const completedTasks = tabTasks.filter(t => !!t.status).length;
 
+  // 6. Check for No Role
+  if (isLoggedIn && currentUserInSheet && currentUserInSheet.role === "No Role") {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4">
+        <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center">
+          <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-slate-800 mb-2">รอการอนุมัติสิทธิ์</h2>
+          <p className="text-slate-600 mb-6">
+            คุณยังไม่ได้รับสิทธิ์เข้าใช้งานระบบ กรุณาติดต่อผู้ดูแลระบบเพื่อขอสิทธิ์
+          </p>
+          <div className="text-xl text-slate-600 font-semibold">
+            {profile?.displayName}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 font-sans pb-20">
+
       {/* Background decoration */}
       <div className="fixed top-0 left-0 w-full h-64 bg-gradient-to-b from-purple-50 to-transparent -z-10"></div>
 

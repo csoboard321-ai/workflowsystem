@@ -89,7 +89,7 @@ function registerUser(data) {
 
   // Append new user
   // Columns: lineUserId(A), displayName(B), NickName(C), Role(D), registeredAt(E)
-  sheet.appendRow([lineUserId, displayName, "", "Owner", new Date()]);
+  sheet.appendRow([lineUserId, displayName, "", "No Role", new Date()]);
 
   return ContentService.createTextOutput(JSON.stringify({ success: true, message: "User registered", id: lineUserId })).setMimeType(ContentService.MimeType.JSON);
 }
