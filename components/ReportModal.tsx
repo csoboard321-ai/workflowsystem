@@ -62,14 +62,14 @@ export default function ReportModal({ isOpen, onClose, title, tasks }: ReportMod
 
                 {/* Content - Scrollable */}
                 <div className="p-4 sm:p-6 overflow-y-auto grow bg-slate-50/30">
-                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                        <table className="w-full text-sm text-left">
+                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-x-auto">
+                        <table className="w-full text-sm text-left min-w-[600px]">
                             <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200 uppercase text-xs">
                                 <tr>
                                     <th className="px-4 py-3 w-[20%]">วาระ/เรื่อง</th>
                                     <th className="px-4 py-3 w-[30%]">ECM</th>
-                                    <th className="px-4 py-3 w-[35%]">Note</th>
-                                    <th className="px-4 py-3 w-[15%]">สถานะ/ผู้รับผิดชอบ</th>
+                                    <th className="px-4 py-3 w-[30%]">Note</th>
+                                    <th className="px-4 py-3 w-[20%]">สถานะ/ผู้รับผิดชอบ</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
