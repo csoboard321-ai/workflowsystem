@@ -24,7 +24,7 @@ export default function ReportModal({ isOpen, onClose, title, tasks }: ReportMod
         sortedTasks.forEach((t, i) => {
             const status = t.status || "Pending";
             const responsible = formatName(t.responsible);
-            text += `${t.work ? t.work + " " : ""}${t.subject}\n`;
+            text += `${t.subject}\n`;
             text += `   - ECM: ${t.ecm || "-"}\n`;
             text += `   - Note: ${t.note || "-"}\n`;
             text += `   - สถานะ: ${status} (${responsible})\n`;
