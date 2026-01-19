@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useLiff } from "./LiffProvider";
 import { User, getUsers, loginUser as apiLoginUser } from "../lib/api";
+import { registerUser } from "../lib/register";
 
 interface AuthContextType {
     user: User | null;
@@ -45,6 +46,9 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
                     if (match) {
                         setUser(match);
                     } else {
+                        // Register new user
+                        await registerUser(liffProfile.userId, liffProfile.displayName);
+
                         setUser({
                             id: liffProfile.userId,
                             name: liffProfile.displayName,
