@@ -25,51 +25,57 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext);
 
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
-    const { isLoggedIn: isLiffLoggedIn, profile: liffProfile } = useLiff();
+    const { isLoggedIn: isLiffLoggedIn, profile: liffProfile, isInitialized } = useLiff();
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [authMethod, setAuthMethod] = useState<"LINE" | "WEB" | "GUEST">("GUEST");
 
-    // Load web session from local storage on mount
     useEffect(() => {
-        const storedUser = localStorage.getItem("web_user");
-        if (storedUser) {
-            try {
-                const parsed = JSON.parse(storedUser);
-                setUser(parsed);
-                setAuthMethod("WEB");
-                setIsLoading(false);
-            } catch (e) {
-                localStorage.removeItem("web_user");
-            }
-        } else {
-            setIsLoading(false);
-        }
-    }, []);
+        // Wait for LIFF to initialize
+        if (!isInitialized) return;
 
-    // Sync with LIFF
-    useEffect(() => {
-        if (isLiffLoggedIn && liffProfile) {
+        const resolveAuth = async () => {
             setIsLoading(true);
-            // Fetch full user details to get Role from Sheet
-            getUsers().then((allUsers) => {
-                const match = allUsers.find((u) => u.id === liffProfile.userId);
-                if (match) {
-                    setUser(match);
-                } else {
-                    // New user or not in sheet yet (Register logic in page.tsx handles creation, 
-                    // but here we might just have basic profile)
-                    setUser({
-                        id: liffProfile.userId,
-                        name: liffProfile.displayName,
-                        nickName: liffProfile.displayName,
-                        role: "No Role"
-                    });
+
+            // 1. Check LINE Login
+            if (isLiffLoggedIn && liffProfile) {
+                try {
+                    const allUsers = await getUsers();
+                    const match = allUsers.find((u) => u.id === liffProfile.userId);
+                    if (match) {
+                        setUser(match);
+                    } else {
+                        setUser({
+                            id: liffProfile.userId,
+                            name: liffProfile.displayName,
+                            nickName: liffProfile.displayName,
+                            role: "No Role"
+                        });
+                    }
+                    setAuthMethod("LINE");
+                } catch (e) {
+                    console.error("Auth Error", e);
                 }
-                setAuthMethod("LINE");
-            }).finally(() => setIsLoading(false));
-        }
-    }, [isLiffLoggedIn, liffProfile]);
+            }
+            // 2. Check Web Session (LocalStorage)
+            else {
+                const storedUser = localStorage.getItem("web_user");
+                if (storedUser) {
+                    try {
+                        const parsed = JSON.parse(storedUser);
+                        setUser(parsed);
+                        setAuthMethod("WEB");
+                    } catch (e) {
+                        localStorage.removeItem("web_user");
+                    }
+                }
+            }
+
+            setIsLoading(false);
+        };
+
+        resolveAuth();
+    }, [isInitialized, isLiffLoggedIn, liffProfile]);
 
     const loginWeb = async (username: string, password: string) => {
         setIsLoading(true);

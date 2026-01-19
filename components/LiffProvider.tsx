@@ -12,6 +12,7 @@ interface LiffContextType {
         pictureUrl?: string;
     } | null;
     error: string | null;
+    isInitialized: boolean;
 }
 
 const LiffContext = createContext<LiffContextType>({
@@ -19,6 +20,7 @@ const LiffContext = createContext<LiffContextType>({
     isLoggedIn: false,
     profile: null,
     error: null,
+    isInitialized: false,
 });
 
 export const useLiff = () => useContext(LiffContext);
@@ -32,6 +34,7 @@ export default function LiffProvider({
     const [error, setError] = useState<string | null>(null);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [profile, setProfile] = useState<LiffContextType["profile"]>(null);
+    const [isInitialized, setIsInitialized] = useState(false);
 
     useEffect(() => {
         const initLiff = async () => {
@@ -57,14 +60,18 @@ export default function LiffProvider({
             } catch (e) {
                 console.error("LIFF Init Error", e);
                 setError(JSON.stringify(e));
+            } finally {
+                setIsInitialized(true);
             }
         };
 
-        initLiff();
+        if (typeof window !== "undefined") {
+            initLiff();
+        }
     }, []);
 
     return (
-        <LiffContext.Provider value={{ liffObject, isLoggedIn, profile, error }}>
+        <LiffContext.Provider value={{ liffObject, isLoggedIn, profile, error, isInitialized }}>
             {children}
         </LiffContext.Provider>
     );
