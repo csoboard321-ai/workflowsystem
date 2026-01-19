@@ -24,7 +24,7 @@ export default function Home() {
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
-  const { user, isLoading: authLoading, isAuthenticated, authMethod } = useAuth();
+  const { user, isLoading: authLoading, isAuthenticated, authMethod, logout } = useAuth();
   const router = useRouter();
   const [isRegistering, setIsRegistering] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
@@ -232,6 +232,7 @@ export default function Home() {
           activeWork={activeWork}
           onWorkChange={setActiveWork}
           workOptions={workOptions}
+          onLogout={authMethod === "WEB" ? logout : undefined}
         />
 
         {/* Removed Cloud-like Tabs (moved to header) */}

@@ -13,6 +13,7 @@ interface DashboardHeaderProps {
     activeWork: string;
     onWorkChange: (work: string) => void;
     workOptions: string[];
+    onLogout?: () => void;
 }
 
 export default function DashboardHeader({
@@ -23,7 +24,8 @@ export default function DashboardHeader({
     onTabChange,
     activeWork,
     onWorkChange,
-    workOptions
+    workOptions,
+    onLogout
 }: DashboardHeaderProps) {
     return (
         <div className="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-3xl p-6 shadow-sm border border-amber-100 mb-6 relative overflow-hidden">
@@ -36,9 +38,19 @@ export default function DashboardHeader({
                     <div>
                         <h1 className="text-2xl font-bold text-slate-800 tracking-tight">สถานะเอกสารประชุม</h1>
                         {profile && (
-                            <div className="flex items-center gap-2 text-slate-500 text-sm mt-1">
-                                <span className="w-2 h-2 rounded-full bg-green-400"></span>
-                                สวัสดี, {profile.displayName}
+                            <div className="flex items-center gap-4 mt-1">
+                                <div className="flex items-center gap-2 text-slate-500 text-sm">
+                                    <span className="w-2 h-2 rounded-full bg-green-400"></span>
+                                    สวัสดี, {profile.displayName}
+                                </div>
+                                {onLogout && (
+                                    <button
+                                        onClick={onLogout}
+                                        className="text-xs text-red-500 hover:text-red-700 font-semibold border border-red-200 hover:bg-red-50 px-3 py-0.5 rounded-full transition-colors"
+                                    >
+                                        ออกจากระบบ
+                                    </button>
+                                )}
                             </div>
                         )}
                     </div>
