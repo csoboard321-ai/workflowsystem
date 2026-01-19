@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Noto_Sans_Thai } from "next/font/google";
 import LiffProvider from "../components/LiffProvider";
+import AuthProvider from "../components/AuthProvider";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -21,7 +22,9 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${notoSansThai.variable} antialiased bg-[#F9FAFB] text-slate-900`}
       >
-        <LiffProvider>{children}</LiffProvider>
+        <LiffProvider>
+          <AuthProvider>{children}</AuthProvider>
+        </LiffProvider>
       </body>
     </html>
   );

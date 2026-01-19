@@ -14,6 +14,10 @@ function doPost(e) {
     return registerUser(data);
   } else if (action === 'getTasks') {
     return getTasks();
+  } else if (action === 'loginUser') {
+    return loginUser(data);
+  } else if (action === 'setPassword') {
+    return setPassword(data);
   } else {
     return ContentService.createTextOutput(JSON.stringify({ error: "Invalid action" })).setMimeType(ContentService.MimeType.JSON);
   }
@@ -88,10 +92,65 @@ function registerUser(data) {
   }
 
   // Append new user
-  // Columns: lineUserId(A), displayName(B), NickName(C), Role(D), registeredAt(E)
-  sheet.appendRow([lineUserId, displayName, "", "No Role", new Date()]);
+  // Columns: lineUserId(A), displayName(B), NickName(C), Role(D), UserManager(E), Password(F), registeredAt(G)
+  // We add empty strings for UserName and Password
+  sheet.appendRow([lineUserId, displayName, "", "No Role", "", "", new Date()]);
 
   return ContentService.createTextOutput(JSON.stringify({ success: true, message: "User registered", id: lineUserId })).setMimeType(ContentService.MimeType.JSON);
+}
+
+function loginUser(data) {
+    const { username, password } = data;
+    if (!username || !password) {
+        return ContentService.createTextOutput(JSON.stringify({ error: "Missing credentials" })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName("Users");
+    if (!sheet) return ContentService.createTextOutput(JSON.stringify({ error: "Users sheet missing" })).setMimeType(ContentService.MimeType.JSON);
+
+    const values = sheet.getDataRange().getValues();
+    // Scan rows. Col E (index 4) = UserName, Col F (index 5) = Password
+    for (let i = 1; i < values.length; i++) {
+        const rowUser = String(values[i][4]).trim();
+        const rowPass = String(values[i][5]).trim();
+        
+        // Simple comparison (In production, use hashing!)
+        if (rowUser === username && rowPass === password) {
+             const user = {
+                id: values[i][0], // lineUserId (might be empty if registered via web only? Assuming Line is primary for now or mixed)
+                name: values[i][1],
+                nickName: values[i][2],
+                role: values[i][3]
+             };
+             return ContentService.createTextOutput(JSON.stringify({ success: true, user })).setMimeType(ContentService.MimeType.JSON);
+        }
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify({ success: false, error: "Invalid credentials" })).setMimeType(ContentService.MimeType.JSON);
+}
+
+function setPassword(data) {
+    const { lineUserId, newPassword } = data;
+    if (!lineUserId || !newPassword) {
+        return ContentService.createTextOutput(JSON.stringify({ error: "Missing data" })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName("Users");
+    if (!sheet) return ContentService.createTextOutput(JSON.stringify({ error: "Users sheet missing" })).setMimeType(ContentService.MimeType.JSON);
+
+    const values = sheet.getDataRange().getValues();
+    // Find user by lineUserId (Col A -> index 0)
+    for (let i = 1; i < values.length; i++) {
+        if (values[i][0] === lineUserId) {
+            // Update Password at Col F (index 5) -> Column 6
+            sheet.getRange(i + 1, 6).setValue(newPassword);
+            return ContentService.createTextOutput(JSON.stringify({ success: true })).setMimeType(ContentService.MimeType.JSON);
+        }
+    }
+
+    return ContentService.createTextOutput(JSON.stringify({ error: "User not found" })).setMimeType(ContentService.MimeType.JSON);
 }
 
 function getUsers() {

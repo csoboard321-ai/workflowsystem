@@ -7,8 +7,11 @@ import TaskRow from "../components/TaskRow";
 import TaskDetailInline from "../components/TaskDetailInline";
 import ForwardTaskModal from "../components/ForwardTaskModal";
 import { Task, User, forwardTask, getTasks, getUsers } from "../lib/api";
-import { useLiff } from "../components/LiffProvider";
+
+import { useAuth } from "../components/AuthProvider";
 import { registerUser } from "../lib/register";
+import { useRouter } from "next/navigation";
+import SetPasswordModal from "../components/SetPasswordModal";
 
 export default function Home() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -21,8 +24,10 @@ export default function Home() {
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
-  const { isLoggedIn, profile, error: liffError } = useLiff();
+  const { user, isLoading: authLoading, isAuthenticated, authMethod } = useAuth();
+  const router = useRouter();
   const [isRegistering, setIsRegistering] = useState(false);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
   // Tabs state
   const [activeTab, setActiveTab] = useState<"Board" | "Excom">("Board");
@@ -40,28 +45,39 @@ export default function Home() {
     });
   }, []);
 
-  // Register user
+  // Auth Check
   useEffect(() => {
-    if (isLoggedIn && profile) {
+    if (!authLoading && !isAuthenticated) {
+      router.push("/login");
+    }
+  }, [authLoading, isAuthenticated, router]);
+
+  // Register user (Only for Line users who might not be in sheet yet)
+  useEffect(() => {
+    if (authMethod === "LINE" && user && !user.role) {
+      // Ideally AuthProvider handles fetching, but if we need to Register:
+      // Actually AuthProvider tries to match. If no match, it sets a temporary user object.
+      // We should check if we need to register.
+      // However, the original logic registered if isLoggedIn. 
+      // With AuthProvider we might need to rely on the fact that if user is in Sheet, they have a role.
+      // If user.role is "No Role" (which we default to in AuthProvider if new), we might default to that?
+      // Let's keep original register logic but adapted.
+      // Actually, AuthProvider already calls getUsers(). If user is new, it sets role to "No Role".
+      // We only need to call registerUser if they are NOT in the sheet at all.
+      // But wait, AuthProvider mocks the user if not found.
+      // Let's register if we are in LINE mode and we suspect they are new.
+      // Safe bet: Just call registerUser. It checks duplicates on backend.
       setIsRegistering(true);
-      registerUser(profile.userId, profile.displayName)
-        .then((res) => {
-          // Refresh users to get the new role immediately
-          getUsers().then(setAllUsers);
+      registerUser(user.id, user.name)
+        .then(() => {
+          // Reload logic if needed, but AuthProvider already loaded. 
+          // Maybe we don't need to do anything as backend handles it.
         })
         .finally(() => setIsRegistering(false));
     }
-  }, [isLoggedIn, profile]);
+  }, [authMethod, user]);
 
-  // Resolve Nickname for "Check" action
-  // If we have profile and allUsers loaded, find the matching user
-  const currentUserInSheet = (profile && allUsers.length > 0)
-    ? allUsers.find(u => u.id === profile.userId)
-    : null;
-
-  const currentUserName = currentUserInSheet
-    ? (currentUserInSheet.nickName || currentUserInSheet.name)
-    : (profile ? profile.displayName : "User A (Guest)");
+  const currentUserName = user?.nickName || user?.name || "Guest";
 
   // --- Filtering & Helper ---
 
@@ -162,7 +178,13 @@ export default function Home() {
   const completedTasks = tabTasks.filter(t => !!t.status).length;
 
   // 6. Check for No Role
-  if (isLoggedIn && currentUserInSheet && currentUserInSheet.role === "No Role") {
+  if (authLoading) {
+    return <div className="min-h-screen flex items-center justify-center text-slate-400">Loading...</div>;
+  }
+
+  if (!isAuthenticated) return null; // Will redirect
+
+  if (user && user.role === "No Role" && authMethod === "LINE") {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4">
         <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center">
@@ -175,9 +197,7 @@ export default function Home() {
           <p className="text-slate-600 mb-6">
             คุณยังไม่ได้รับสิทธิ์เข้าใช้งานระบบ กรุณาติดต่อผู้ดูแลระบบเพื่อขอสิทธิ์
           </p>
-          <div className="text-xl text-slate-600 font-semibold">
-            {profile?.displayName}
-          </div>
+          {user?.name}
         </div>
       </div>
     );
@@ -190,8 +210,21 @@ export default function Home() {
       <div className="fixed top-0 left-0 w-full h-64 bg-gradient-to-b from-purple-50 to-transparent -z-10"></div>
 
       <div className="max-w-5xl mx-auto p-4 md:p-6 lg:p-8">
+        <div className="flex justify-between items-center mb-4">
+          {/* Placeholder for left side if needed */}
+          <div className="flex-1"></div>
+          {authMethod === "LINE" && user && (
+            <button
+              onClick={() => setIsPasswordModalOpen(true)}
+              className="text-sm bg-purple-100 text-purple-600 px-3 py-1 rounded-full hover:bg-purple-200 transition-colors"
+            >
+              Set Password
+            </button>
+          )}
+        </div>
+
         <DashboardHeader
-          profile={profile ? profile : null}
+          profile={user ? { userId: user.id, displayName: user.name, pictureUrl: "" } : null}
           totalTasks={totalTasks}
           completedTasks={completedTasks}
           activeTab={activeTab}
@@ -247,6 +280,14 @@ export default function Home() {
           mode={modalMode}
           responsibleName={selectedTask?.responsible}
         />
+
+        {user && (
+          <SetPasswordModal
+            isOpen={isPasswordModalOpen}
+            onClose={() => setIsPasswordModalOpen(false)}
+            lineUserId={user.id}
+          />
+        )}
       </div>
     </div>
   );

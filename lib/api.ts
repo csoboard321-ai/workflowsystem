@@ -105,3 +105,36 @@ export async function forwardTask(
     return { success: false, error: String(error) };
   }
 }
+
+export async function loginUser(username: string, password: string): Promise<{ success: boolean; user?: User; error?: string }> {
+  if (!GAS_API_URL) {
+      if (username === "admin" && password === "1234") {
+          return { success: true, user: { id: "mock_id", name: "Admin", role: "Owner" } };
+      }
+      return { success: false, error: "Invalid Mock Credentials" };
+  }
+
+  try {
+      const response = await fetch(GAS_API_URL, {
+          method: "POST",
+          body: JSON.stringify({ action: "loginUser", username, password }),
+      });
+      return await response.json();
+  } catch (error) {
+      return { success: false, error: String(error) };
+  }
+}
+
+export async function setPassword(lineUserId: string, newPassword: string): Promise<{ success: boolean; error?: string }> {
+    if (!GAS_API_URL) return { success: true };
+
+    try {
+        const response = await fetch(GAS_API_URL, {
+            method: "POST",
+            body: JSON.stringify({ action: "setPassword", lineUserId, newPassword }),
+        });
+        return await response.json();
+    } catch (error) {
+        return { success: false, error: String(error) };
+    }
+}
