@@ -197,7 +197,7 @@ function getUsers() {
 const CHANNEL_ACCESS_TOKEN = '+VdnkJt3aFnhmoSxHZ42LlA8LGHRTM6Pmkae/x2rqzkpbenMvVwBR4EyiIk07LeBCr/kf/o762Zvj1dggKqEKwx6/B0sp9o1bb/1RtSo1mQTGm1Pkf1T4DPniDsGCyfUdOxlX6SuIf5Gdgaxnc4oyAdB04t89/1O/w1cDnyilFU='; // *** REPLACE WITH YOUR TOKEN ***
 
 function forwardTask(data) {
-  const { sheetName, rowIndex, remark, nextUserName, currentUserName, actionType } = data;
+  const { sheetName, rowIndex, remark, nextUserName, currentUserName, actionType, work, subject, meetingNo } = data;
   // actionType: "SUBMIT" (Review), "RETURN" (Approved/Return to Owner), "CLOSE" (Done)
 
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -207,12 +207,48 @@ function forwardTask(data) {
       return ContentService.createTextOutput(JSON.stringify({ error: "Sheet not found" })).setMimeType(ContentService.MimeType.JSON);
   }
 
-  const rIdx = Number(rowIndex);
+  let rIdx = Number(rowIndex);
   
-  // 1. Get current row data
-  // Updated range to read 15 columns (A-O)
-  const range = sheet.getRange(rIdx, 1, 1, 15);
-  const values = range.getValues()[0];
+  // 1. Get current row data & Verify (Anti-Drift)
+  let range = sheet.getRange(rIdx, 1, 1, 15);
+  let values = range.getValues()[0];
+
+  // If identifiers provided, verify we are on the right row
+  if (work && subject) {
+      const currentWork = String(values[0]);
+      const currentMeeting = String(values[1]);
+      const currentSubject = String(values[3]);
+
+      // Strict String Comparison
+      if (currentWork !== work || currentSubject !== subject || currentMeeting !== meetingNo) {
+           Logger.log(`Drift Detected! Expected: ${work}/${subject} @ Row ${rIdx}. Found: ${currentWork}/${currentSubject}. Searching...`);
+           
+           // Fallback: Search the whole sheet
+           const allData = sheet.getDataRange().getValues();
+           let foundIndex = -1;
+           // assuming header at row 0, data starts row 1
+           for (let i = 1; i < allData.length; i++) {
+               const row = allData[i];
+               // Check A(0), B(1), D(3)
+               if (String(row[0]) === work && String(row[3]) === subject && String(row[1]) === meetingNo) {
+                   foundIndex = i + 1; // 1-based
+                   break;
+               }
+           }
+
+           if (foundIndex !== -1) {
+               rIdx = foundIndex;
+               Logger.log("Found correct row at: " + rIdx);
+               // Refresh values from the correct row
+               range = sheet.getRange(rIdx, 1, 1, 15);
+               values = range.getValues()[0];
+           } else {
+               Logger.log("Task not found.");
+               return ContentService.createTextOutput(JSON.stringify({ error: "Task not found (Row mismatch)" })).setMimeType(ContentService.MimeType.JSON);
+           }
+      }
+  }
+
   const currentOrder = Number(values[13]) || 0; 
   
   // Extract task details for notification

@@ -93,6 +93,9 @@ export async function forwardTask(
         action: "forwardTask",
         sheetName: task.sheet,
         rowIndex: task.rowIndex,
+        work: task.work,         // Identifier
+        subject: task.subject,   // Identifier
+        meetingNo: task.meetingNo, // Identifier
         remark,
         nextUserName,
         currentUserName,
@@ -108,33 +111,33 @@ export async function forwardTask(
 
 export async function loginUser(username: string, password: string): Promise<{ success: boolean; user?: User; error?: string }> {
   if (!GAS_API_URL) {
-      if (username === "admin" && password === "1234") {
-          return { success: true, user: { id: "mock_id", name: "Admin", role: "Owner" } };
-      }
-      return { success: false, error: "Invalid Mock Credentials" };
+    if (username === "admin" && password === "1234") {
+      return { success: true, user: { id: "mock_id", name: "Admin", role: "Owner" } };
+    }
+    return { success: false, error: "Invalid Mock Credentials" };
   }
 
   try {
-      const response = await fetch(GAS_API_URL, {
-          method: "POST",
-          body: JSON.stringify({ action: "loginUser", username, password }),
-      });
-      return await response.json();
+    const response = await fetch(GAS_API_URL, {
+      method: "POST",
+      body: JSON.stringify({ action: "loginUser", username, password }),
+    });
+    return await response.json();
   } catch (error) {
-      return { success: false, error: String(error) };
+    return { success: false, error: String(error) };
   }
 }
 
 export async function setPassword(lineUserId: string, newPassword: string): Promise<{ success: boolean; error?: string }> {
-    if (!GAS_API_URL) return { success: true };
+  if (!GAS_API_URL) return { success: true };
 
-    try {
-        const response = await fetch(GAS_API_URL, {
-            method: "POST",
-            body: JSON.stringify({ action: "setPassword", lineUserId, newPassword }),
-        });
-        return await response.json();
-    } catch (error) {
-        return { success: false, error: String(error) };
-    }
+  try {
+    const response = await fetch(GAS_API_URL, {
+      method: "POST",
+      body: JSON.stringify({ action: "setPassword", lineUserId, newPassword }),
+    });
+    return await response.json();
+  } catch (error) {
+    return { success: false, error: String(error) };
+  }
 }
